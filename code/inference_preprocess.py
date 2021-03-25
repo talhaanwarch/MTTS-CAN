@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 import scipy.io
 from scipy.sparse import spdiags
-
+import random
 def preprocess_raw_video(videoFilePath, dim=36):
 
     #########################################################################
@@ -14,6 +14,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     t = []
     i = 0
     vidObj = cv2.VideoCapture(videoFilePath);
+    fps = vidObj.get(cv2.CAP_PROP_FPS) #calculate fps
     totalFrames = int(vidObj.get(cv2.CAP_PROP_FRAME_COUNT)) # get total frame size
     Xsub = np.zeros((totalFrames, dim, dim, 3), dtype = np.float32)
     height = vidObj.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -22,19 +23,26 @@ def preprocess_raw_video(videoFilePath, dim=36):
     dims = img.shape
     print("Orignal Height", height)
     print("Original width", width)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
     #########################################################################
     # Crop each frame size into dim x dim
     while success:
         t.append(vidObj.get(cv2.CAP_PROP_POS_MSEC))# current timestamp in milisecond
-        vidLxL = cv2.resize(img_as_float(img[:, int(width/2)-int(height/2 + 1):int(height/2)+int(width/2), :]), (dim, dim), interpolation = cv2.INTER_AREA)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        for (x,y,w,h) in faces:
+            roi = img[y:y+h, x:x+w]
+        vidLxL = cv2.resize(roi,(dim,dim))    
+        #vidLxL = cv2.resize(img_as_float(img[:, int(width/2)-int(height/2 + 1):int(height/2)+int(width/2), :]), (dim, dim), interpolation = cv2.INTER_AREA)
         vidLxL = cv2.rotate(vidLxL, cv2.ROTATE_90_CLOCKWISE) # rotate 90 degree
-        vidLxL = cv2.cvtColor(vidLxL.astype('float32'), cv2.COLOR_BGR2RGB)
-        vidLxL[vidLxL > 1] = 1
-        vidLxL[vidLxL < (1/255)] = 1/255
-        Xsub[i, :, :, :] = vidLxL
+        vidLxL = cv2.cvtColor(vidLxL, cv2.COLOR_BGR2RGB)
+        Xsub[i, :, :, :] = vidLxL/255.0
         success, img = vidObj.read() # read the next one
         i = i + 1
-    plt.imshow(Xsub[0])
+    
+    n=random.randint(0,len(Xsub))
+    plt.imshow(Xsub[n])
     plt.title('Sample Preprocessed Frame')
     plt.show()
     #########################################################################
@@ -52,7 +60,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     #########################################################################
     # Plot an example of data after preprocess
     dXsub = np.concatenate((dXsub, Xsub), axis = 3);
-    return dXsub
+    return dXsub,fps
 
 def detrend(signal, Lambda):
     """detrend(signal, Lambda) -> filtered_signal
