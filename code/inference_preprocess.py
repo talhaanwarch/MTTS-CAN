@@ -15,6 +15,15 @@ def resize_image(img,h_new,w_old,h_old):
     resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     return resized
 
+def non_skin_remove(patches):
+    patches_hsv=[cv2.cvtColor(i,cv2.COLOR_RGB2HSV) for i in patches]
+    lower = np.array([0, 48, 80], dtype = "uint8")
+    upper = np.array([20, 255, 255], dtype = "uint8")
+    skinMask = [cv2.inRange(i, lower, upper) for i in patches_hsv]
+    skinindex = [i for i,j in enumerate(skinMask) if j.sum()>5]
+    patches=[patches[i] for i in skinindex]
+    return patches
+
 
 def preprocess_raw_video(videoFilePath, dim=36):
 
@@ -57,11 +66,13 @@ def preprocess_raw_video(videoFilePath, dim=36):
     plt.show()
     #########################################################################
     # Normalized Frames in the motion branch
+    print(Xsub.shape)
     normalized_len = len(t) - 1
     dXsub = np.zeros((normalized_len, dim, dim, 3), dtype = np.float32)
     for j in range(normalized_len - 1):
         dXsub[j, :, :, :] = (Xsub[j+1, :, :, :] - Xsub[j, :, :, :]) / (Xsub[j+1, :, :, :] + Xsub[j, :, :, :])
     dXsub = dXsub / np.std(dXsub)
+    print(dXsub.shape)
     #########################################################################
     # Normalize raw frames in the apperance branch
     Xsub = Xsub - np.mean(Xsub)

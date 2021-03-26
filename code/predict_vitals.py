@@ -34,6 +34,7 @@ def predict_vitals(args):
     model_checkpoint = './mtts_can.hdf5'
     batch_size = args.batch_size
     sample_data_path = args.video_path
+    distance=args.distance
     dXsub,fs = preprocess_raw_video(sample_data_path, dim=36)
     print('dXsub shape', dXsub.shape)
 
@@ -47,7 +48,7 @@ def predict_vitals(args):
 
     pulse_pred = yptest[0]
     pulse_pred = detrend(np.cumsum(pulse_pred), 100)
-    [b_pulse, a_pulse] = butter(2, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
+    [b_pulse, a_pulse] = butter(1, [0.75 / fs * 2, 2.5 / fs * 2], btype='bandpass')
     pulse_pred = scipy.signal.filtfilt(b_pulse, a_pulse, np.double(pulse_pred))
 
     resp_pred = yptest[1]
@@ -56,7 +57,7 @@ def predict_vitals(args):
     resp_pred = scipy.signal.filtfilt(b_resp, a_resp, np.double(resp_pred))
     
     ########## calculate peaks ####################
-    peaks, _ = find_peaks(pulse_pred, distance=15)
+    peaks, _ = find_peaks(pulse_pred, distance=distance)
     hear_rate(peaks,fs)
     ########## Plot ##################
 
@@ -74,6 +75,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--video_path', type=str, help='processed video path')
+    parser.add_argument('--distance', type=int, default = 15, help='distance range from 10-30')
     parser.add_argument('--batch_size', type=int, default = 100, help='batch size (multiplier of 10)')
     args = parser.parse_args()
 
