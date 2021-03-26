@@ -7,6 +7,15 @@ import time
 import scipy.io
 from scipy.sparse import spdiags
 import random
+
+def resize_image(img,h_new,w_old,h_old):
+    "I believe reszing image before face detection will speed up"
+    r = h_new / float(h_old)
+    dim = (int(w_old * r), h_new)
+    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    return resized
+
+
 def preprocess_raw_video(videoFilePath, dim=36):
 
     #########################################################################
@@ -29,6 +38,7 @@ def preprocess_raw_video(videoFilePath, dim=36):
     # Crop each frame size into dim x dim
     while success:
         t.append(vidObj.get(cv2.CAP_PROP_POS_MSEC))# current timestamp in milisecond
+        img=resize_image(img,300,width,height)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 5)
         for (x,y,w,h) in faces:
