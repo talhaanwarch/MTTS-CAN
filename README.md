@@ -83,7 +83,11 @@ conda install -c menpo opencv -y
 pip install opencv-python
 ```
 
-
+# Changes I have made
+* I added the face detection and cropping from the frame.
+* Remove FPS argument instead add auto calculataion of FPS from video.
+* Add peak-to-peak detection algorithm from scipy
+* Calculate heart rate from peak-to-peak interval
 
 
 ## Contact
